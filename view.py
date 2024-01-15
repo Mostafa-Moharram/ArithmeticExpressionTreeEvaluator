@@ -23,17 +23,29 @@ class ExpressionView:
         self.__canvas = Canvas(self.__window, bg='grey')
         self.__canvas.grid(row=0, column=0, sticky='nesw')
     
-    # Show it
-    def create_circle_in_view(self, text: str):
-        item = self.__canvas.create_oval(0, 0, 50, 50, fill='white')
-        item_text = self.__canvas.create_text(25, 25, text=text)
-        self.__canvas.tag_bind(item, '<B1-Motion>', functools.partial(self.__handle_move_event, trigger=item, trigger_text=item_text))
-        self.__canvas.tag_bind(item_text, '<B1-Motion>', functools.partial(self.__handle_move_event, trigger=item, trigger_text=item_text))
-
-    def __handle_move_event(self, event: Event, trigger: int, trigger_text: int):
-        self.__canvas.moveto(trigger, event.x - 25, event.y - 25)
+    def __handle_move_event(self, event: Event, trigger: int, trigger_text: int, dx: int, dy: int):
+        self.__canvas.moveto(trigger, event.x - 35, event.y - 35)
         coords = self.__canvas.coords(trigger)
-        self.__canvas.coords(trigger_text, coords[0] + 25, coords[1] + 25)
+        self.__canvas.coords(trigger_text, coords[0] + dx, coords[1] + dy)
 
     def mainloop(self):
         self.__window.mainloop()
+
+    # Show it
+    def create_circle_in_view(self, text: str):
+        item = self.__canvas.create_oval(0, 0, 70, 70, fill='white')
+        item_text = self.__canvas.create_text(35, 35, text=text)
+        self.__canvas.tag_bind(item, '<B1-Motion>', functools.partial(self.__handle_move_event, trigger=item, trigger_text=item_text, dx=35, dy=35))
+        self.__canvas.tag_bind(item_text, '<B1-Motion>', functools.partial(self.__handle_move_event, trigger=item, trigger_text=item_text, dx=35, dy=35))
+    
+    def create_rectangle_in_view(self, text: str):
+        item = self.__canvas.create_rectangle(0, 0, 70, 70, fill='white')
+        item_text = self.__canvas.create_text(35, 35, text=text)
+        self.__canvas.tag_bind(item, '<B1-Motion>', functools.partial(self.__handle_move_event, trigger=item, trigger_text=item_text, dx=35, dy=35))
+        self.__canvas.tag_bind(item_text, '<B1-Motion>', functools.partial(self.__handle_move_event, trigger=item, trigger_text=item_text, dx=35, dy=35))
+
+    def create_triangle_in_view(self, text: str):
+        item = self.__canvas.create_polygon([35, 0, 0, 70, 70, 70], fill='white')
+        item_text = self.__canvas.create_text(35, 35, text=text)
+        self.__canvas.tag_bind(item, '<B1-Motion>', functools.partial(self.__handle_move_event, trigger=item, trigger_text=item_text, dx=0, dy=50))
+        self.__canvas.tag_bind(item_text, '<B1-Motion>', functools.partial(self.__handle_move_event, trigger=item, trigger_text=item_text, dx=0, dy=50))
