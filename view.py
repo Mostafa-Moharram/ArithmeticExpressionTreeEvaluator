@@ -1,8 +1,10 @@
 import functools
 from tkinter import Button, Canvas, Entry, Event, Frame, Label, StringVar, Tk, messagebox, ttk
+import re
 
 class ExpressionView:
-    def __init__(self, controller):
+    def __init__(self, controller, operators: list[str] | tuple[str]):
+        self.__variable_name_regex = re.compile("^[a-zA-Z_]\\w*$")
         self.__controller = controller
         self.__window = Tk()
         self.__window.title('Expression Tree Parser')
@@ -15,8 +17,11 @@ class ExpressionView:
         self.__window.resizable(width=False, height=False)
         self.__window.state('zoomed')
         self.__create_canvas()
+        self.__create_controls(operators)
+        self.__variable_names = []
+        self.__variable_name_values = []
     
-    def create_controls(self, operators: list[str] | tuple[str]):
+    def __create_controls(self, operators: list[str] | tuple[str]):
         controls_frame = Frame(self.__window)
 
         controls_heading_label = Label(controls_frame, text='Controls', justify='center', font=(None, 20))
@@ -24,24 +29,76 @@ class ExpressionView:
 
         self.__add_operators_in_view(controls_frame, operators)
         self.__add_constant_in_view(controls_frame)
+        self.__add_variables_in_view(controls_frame)
 
+        evaluate_button = Button(controls_frame, text='Evaluate',
+                                 command=self.__evaluate_expression)
+        evaluate_button.pack(anchor='s', side='bottom')
         controls_frame.grid(row=0, column=1, sticky='nesw')
     
+    def __evaluate_expression(self):
+        try:
+            variable_keyvalue = [(n, float(v.get())) for n, v
+                                 in zip(self.__variable_names, self.__variable_name_values)]
+            
+            self.__controller.evaluate_expression_view(self, variable_keyvalue)
+        except:
+            messagebox.showerror('Evaluation | Invalid Input', 'Input has to be numeric value.')
+
     def __add_operators_in_view(self, controls_frame: Frame, operators: list[str] | tuple[str]):
         operators_frame = Frame(controls_frame)
 
         operator_button = Button(operators_frame, text='Create operator')
-        operator_button.pack(side='left', expand=True)
+        operator_button.pack(side='left')
 
         operators_comboBox = ttk.Combobox(operators_frame, state='readonly')
         operators_comboBox['values'] = operators
-        operators_comboBox.pack(side='left', expand=True)
+        operators_comboBox.pack(side='right')
         operators_comboBox.current(0)
 
         operator_button.bind('<Button-1>',
                             lambda _: self.__controller.create_operator_view(self, operators_comboBox.get()))
 
-        operators_frame.pack(fill='x')
+        operators_frame.pack(fill='x', side='top', pady=(0, 5))
+    
+    def __handle_add_variable(self, variable_name: str):
+        if not self.__variable_name_regex.fullmatch(variable_name):
+            messagebox.showerror('Invalid Input', 'Input has to start with a letter followed by zero or more digits or letters.')
+            return
+
+        self.__controller.create_variable_view(self, variable_name)
+
+        if variable_name in self.__variable_names:
+            return
+        
+        self.__variable_names.append(variable_name)
+        variable_name_var = StringVar()
+        self.__variable_name_values.append(variable_name_var)
+
+        variable_frame = Frame(self.__variables_frame)
+        variable_name_text = Label(variable_frame, text=variable_name)
+        variable_name_input = Entry(variable_frame,
+                                    textvariable=variable_name_var)
+        variable_name_text.pack(side='left')
+        variable_name_input.pack(side='right')
+        variable_frame.pack(side='top', anchor='w', fill='x')
+
+    def __add_variables_in_view(self, controls_frame: Frame):
+        self.__variables_frame = Frame(controls_frame)
+
+        variable_controls_frame = Frame(self.__variables_frame)
+
+        variable_name = StringVar()
+        variable_button = Button(variable_controls_frame, text='Add variable',
+                                 command=lambda:
+                                    self.__handle_add_variable(variable_name.get()))
+        variable_name_entry = Entry(variable_controls_frame,
+                                    textvariable=variable_name)
+        
+        variable_button.pack(side='left')
+        variable_name_entry.pack(side='right')
+        variable_controls_frame.pack(side='top', fill='x')
+        self.__variables_frame.pack(fill='x', side='top')
     
     @staticmethod
     def __handle_float_input(value_str: str):
@@ -66,12 +123,12 @@ class ExpressionView:
                                  text='Create constant',
                                  command=lambda:
                              self.__handle_constant_input(constant_input_value.get()))
-        constant_button.pack(side='left', expand=True)
+        constant_button.pack(side='left')
 
         value_entry = Entry(constant_frame, textvariable=constant_input_value)
-        value_entry.pack(side='left', expand=True)
+        value_entry.pack(side='right')
 
-        constant_frame.pack(fill='x')
+        constant_frame.pack(fill='x', side='top', pady=(0, 5))
 
     def __create_canvas(self):
         self.__canvas = Canvas(self.__window, bg='grey')
