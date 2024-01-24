@@ -21,7 +21,8 @@ class ExpressionView:
         self.__pointer_to = dict()
         self.__pointee_by = dict()
         self.__active_item = None
-    
+        self.__potential_parents = set()
+
     def __create_controls(self, operators: list[str] | tuple[str]):
         controls_frame = Frame(self.__window)
 
@@ -145,7 +146,8 @@ class ExpressionView:
 
     def __handle_mouse_right_click(self, item: int):
         if self.__active_item is None:
-            self.__activate_arrow_drawing(item)
+            if item in self.__potential_parents:
+                self.__activate_arrow_drawing(item)
             return
         if self.__active_item == item:
             self.__deactivate_arrow_drawing()
@@ -235,5 +237,6 @@ class ExpressionView:
 
     def add_operator(self, text: str, id: int):
         view_id = self.__create_circle_in_view(text)
+        self.__potential_parents.add(view_id)
         # TODO: Bind model_id with view_id
 
