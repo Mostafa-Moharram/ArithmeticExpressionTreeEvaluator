@@ -36,7 +36,7 @@ class ExpressionView:
     
     def __evaluate_expression(self):
         variable_keyvalue = {n: v.get() for n, v in self.__variable_name_values.items()}
-        self.__controller.evaluate_expression_view(self, variable_keyvalue)
+        self.__controller.evaluate_expression(self, variable_keyvalue)
 
     def __add_operators_in_view(self, controls_frame: Frame, operators: list[str] | tuple[str]):
         operators_frame = Frame(controls_frame)
@@ -50,7 +50,7 @@ class ExpressionView:
         operators_comboBox.current(0)
 
         operator_button.bind('<Button-1>',
-                            lambda _: self.__controller.create_operator_view(self, operators_comboBox.get()))
+                            lambda _: self.__controller.create_operator(self, operators_comboBox.get()))
 
         operators_frame.pack(fill='x', side='top', pady=(0, 5))
 
@@ -62,7 +62,7 @@ class ExpressionView:
         variable_name = StringVar()
         variable_button = Button(variable_controls_frame, text='Add variable',
                                  command=lambda:
-                                    self.__controller.create_variable_view(self, variable_name.get()))
+                                    self.__controller.create_variable(self, variable_name.get()))
         variable_name_entry = Entry(variable_controls_frame,
                                     textvariable=variable_name)
         
@@ -78,7 +78,7 @@ class ExpressionView:
         constant_button = Button(constant_frame,
                                  text='Create constant',
                                  command=lambda:
-                                 self.__controller.create_constant_view(self,
+                                 self.__controller.create_constant(self,
                                     constant_input_value.get()))
         constant_button.pack(side='left')
 
