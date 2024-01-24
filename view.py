@@ -18,6 +18,9 @@ class ExpressionView:
         self.__create_controls(operators)
         self.__variable_name_values = dict()
         self.__view_id_map = dict()
+        self.__pointer_to = dict()
+        self.__pointee_by = dict()
+        self.__active_item = None
     
     def __create_controls(self, operators: list[str] | tuple[str]):
         controls_frame = Frame(self.__window)
@@ -90,31 +93,114 @@ class ExpressionView:
     def __create_canvas(self):
         self.__canvas = Canvas(self.__window, bg='lightgray')
         self.__canvas.grid(row=0, column=0, sticky='nesw')
-    
+
+    def __update_pointer_pointee_lines(self, pointer_coords, pointee_coords, line1, line2):
+        middle_coords = ((pointer_coords[0] + pointee_coords[0]) // 2,
+                         (pointer_coords[1] + pointee_coords[1]) // 2)
+        self.__canvas.coords(line1,
+                             pointer_coords[0], pointer_coords[1],
+                             middle_coords[0], middle_coords[1])
+        self.__canvas.coords(line2,
+                             middle_coords[0], middle_coords[1],
+                             pointee_coords[0], pointee_coords[1])
+
+    def __update_pointer_to_pointees(self, pointer):
+        if pointer not in self.__pointer_to.keys():
+            return
+        pointer_coords = ExpressionView.__get_center(self.__canvas.coords(pointer))
+        for pointee, line1, line2 in self.__pointer_to[pointer]:
+            pointee_coords = ExpressionView.__get_center(self.__canvas.coords(pointee))
+            self.__update_pointer_pointee_lines(pointer_coords, pointee_coords,
+                                                line1, line2)
+
+    def __update_pointee_by_pointers(self, pointee):
+        if pointee not in self.__pointee_by.keys():
+            return
+        pointee_coords = ExpressionView.__get_center(self.__canvas.coords(pointee))
+        for pointer, line1, line2 in self.__pointee_by[pointee]:
+            pointer_coords = ExpressionView.__get_center(self.__canvas.coords(pointer))
+            self.__update_pointer_pointee_lines(pointer_coords, pointee_coords,
+                                                line1, line2)
+
     def __handle_move_event(self, event: Event, trigger: int, trigger_text: int, dx: int, dy: int):
         self.__canvas.moveto(trigger, event.x - 35, event.y - 35)
         coords = self.__canvas.coords(trigger)
         self.__canvas.coords(trigger_text, coords[0] + dx, coords[1] + dy)
-    
+        self.__update_pointer_to_pointees(trigger)
+        self.__update_pointee_by_pointers(trigger)
+
+    def __activate_arrow_drawing(self, item: int):
+        self.__canvas.itemconfigure(item, outline='black')
+        self.__active_item = item
+
+    def __deactivate_arrow_drawing(self):
+        self.__canvas.itemconfigure(self.__active_item, outline='white')
+        self.__active_item = None
+
+    @staticmethod
+    def __get_center(coords) -> tuple[int]:
+        if len(coords) == 4:
+            return ((coords[0] + coords[2]) // 2, (coords[1] + coords[3]) // 2)
+        return (coords[0], coords[1] + 50)
+
+    def __handle_mouse_right_click(self, item: int):
+        if self.__active_item is None:
+            self.__activate_arrow_drawing(item)
+            return
+        if self.__active_item == item:
+            self.__deactivate_arrow_drawing()
+            return
+        pointer = self.__active_item
+        pointee = item
+        self.__deactivate_arrow_drawing()
+        print(pointer, '-->', pointee)
+        pointer_coord = ExpressionView.__get_center(
+            self.__canvas.coords(pointer))
+        pointee_coord = ExpressionView.__get_center(
+            self.__canvas.coords(pointee))
+        mid = ((pointee_coord[0] + pointer_coord[0]) // 2,
+               (pointee_coord[1] + pointer_coord[1]) // 2)
+        line1 = self.__canvas.create_line(
+            pointer_coord[0], pointer_coord[1],
+            mid[0], mid[1],
+            arrow='last', fill='black', width='2')
+        line2 = self.__canvas.create_line(
+            mid[0], mid[1],
+            pointee_coord[0], pointee_coord[1],
+            fill='black', width='2')
+        self.__canvas.lower(line1)
+        self.__canvas.lower(line2)
+        if pointer not in self.__pointer_to.keys():
+            self.__pointer_to[pointer] = [(pointee, line1, line2), ]
+        else:
+            self.__pointer_to[pointer].append((pointee, line1, line2))
+        if pointee not in self.__pointee_by.keys():
+            self.__pointee_by[pointee] = [(pointer, line1, line2), ]
+        else:
+            self.__pointee_by[pointee].append((pointer, line1, line2))
+
     def __create_circle_in_view(self, text: str):
-        item = self.__canvas.create_oval(0, 0, 60, 60, fill='white')
+        item = self.__canvas.create_oval(0, 0, 60, 60, fill='white', width=1, outline='white')
         item_text = self.__canvas.create_text(30, 30, text=text, font=(None, 18))
         self.__canvas.tag_bind(item, '<B1-Motion>', functools.partial(self.__handle_move_event, trigger=item, trigger_text=item_text, dx=30, dy=30))
         self.__canvas.tag_bind(item_text, '<B1-Motion>', functools.partial(self.__handle_move_event, trigger=item, trigger_text=item_text, dx=30, dy=30))
+        self.__canvas.tag_bind(item, '<Button-3>', lambda _: self.__handle_mouse_right_click(item))
         return item
     
     def __create_rectangle_in_view(self, text: str):
-        item = self.__canvas.create_rectangle(0, 0, 70, 70, fill='white')
+        item = self.__canvas.create_rectangle(0, 0, 70, 70, fill='white', width=1, outline='white')
         item_text = self.__canvas.create_text(35, 35, text=text)
         self.__canvas.tag_bind(item, '<B1-Motion>', functools.partial(self.__handle_move_event, trigger=item, trigger_text=item_text, dx=35, dy=35))
         self.__canvas.tag_bind(item_text, '<B1-Motion>', functools.partial(self.__handle_move_event, trigger=item, trigger_text=item_text, dx=35, dy=35))
+        self.__canvas.tag_bind(item, '<Button-3>', lambda _: self.__handle_mouse_right_click(item))
         return item
 
     def __create_triangle_in_view(self, text: str):
-        item = self.__canvas.create_polygon([35, 0, 0, 70, 70, 70], fill='white')
+        item = self.__canvas.create_polygon([35, 0, 0, 70, 70, 70], fill='white', width=1, outline='white')
         item_text = self.__canvas.create_text(35, 50, text=text)
         self.__canvas.tag_bind(item, '<B1-Motion>', functools.partial(self.__handle_move_event, trigger=item, trigger_text=item_text, dx=0, dy=50))
         self.__canvas.tag_bind(item_text, '<B1-Motion>', functools.partial(self.__handle_move_event, trigger=item, trigger_text=item_text, dx=0, dy=50))
+        self.__canvas.tag_bind(item, '<Button-3>', lambda _: self.__handle_mouse_right_click(item))
         return item
 
     def mainloop(self):
