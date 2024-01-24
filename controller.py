@@ -1,15 +1,23 @@
+from validators import try_parse_float, validate_variable_name
 from view import ExpressionView
-
 
 class ExpressionController:
     def create_operator_view(self, view: ExpressionView, operator: str):
-        view.create_circle_in_view(operator)
+        view.add_operator(operator, 0) # TODO
 
-    def create_constant_view(self, view: ExpressionView, value: float):
-        view.create_triangle_in_view(str(value))
-    
+    def create_constant_view(self, view: ExpressionView, value_str: str):
+        result = try_parse_float(value_str)
+        if result[0]:
+            view.add_constant(str(result[1]), 0) # TODO
+        else:
+            view.show_error('Invalid Input', result[1])
+
     def create_variable_view(self, view: ExpressionView, name: str):
-        view.create_rectangle_in_view(name)
+        validation_result = validate_variable_name(name)
+        if validation_result[0]:
+            view.add_variable(name, 0) # TODO
+        else:
+            view.show_error('Invaid Input', validation_result[1])
 
     def evaluate_expression_view(self, view: ExpressionView, variable_keyvalue: list[tuple]):
         print(variable_keyvalue)
