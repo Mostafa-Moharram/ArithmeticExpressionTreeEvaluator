@@ -2,7 +2,7 @@ from models.expression import Expression
 
 
 class Variable(Expression):
-    def __init__(self, name, variables: dict):
+    def __init__(self, name: str, variables: dict):
         self.__name = name
         self.__variables = variables
 

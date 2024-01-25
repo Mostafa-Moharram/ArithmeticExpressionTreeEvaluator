@@ -1,3 +1,4 @@
+import math
 from model import ExpressionModel
 from validators import try_parse_float, validate_variable_name
 from view import ExpressionView
@@ -40,6 +41,19 @@ class ExpressionController:
         except Exception as e:
             view.show_error('Unknown error', e.args[0])
 
-    def evaluate_expression(self, view: ExpressionView, variable_keyvalue: list[tuple]):
-        print(variable_keyvalue)
+    def evaluate_expression(self, view: ExpressionView, variable_keyvalue: dict):
+        for name in self.__model.variables:
+            if name not in variable_keyvalue:
+                view.show_error('Invalid Input', f'Variable `{name}` value not specified')
+                return
+            result = try_parse_float(variable_keyvalue[name])
+            if not result[0] or not math.isfinite(result[1]):
+                view.show_error('Invalid Input', f'Variable `{name}` value is not a finite numeric value.')
+                return
+            self.__model.set_variable_value(name, result[1])
+        try:
+            result = self.__model.evaluate()
+            view.show_info('Expression Evaluated', f'The expression evaluated to `{result}`.')
+        except Exception as e:
+            view.show_error('Evaluation Error', e.args[0])
 

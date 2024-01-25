@@ -145,29 +145,6 @@ class ExpressionView:
             return ((coords[0] + coords[2]) // 2, (coords[1] + coords[3]) // 2)
         return (coords[0], coords[1] + 50)
 
-    def form_parenting_connection(self, parent_id: int, child_id: int) -> None:
-        pointer = self.__model_id_map[parent_id]
-        pointee = self.__model_id_map[child_id]
-        print(pointer, '-->', pointee)
-        pointer_coord = ExpressionView.__get_center(
-            self.__canvas.coords(pointer))
-        pointee_coord = ExpressionView.__get_center(
-            self.__canvas.coords(pointee))
-        mid = ((pointee_coord[0] + pointer_coord[0]) // 2,
-               (pointee_coord[1] + pointer_coord[1]) // 2)
-        line1 = self.__canvas.create_line(
-            pointer_coord[0], pointer_coord[1],
-            mid[0], mid[1],
-            arrow='last', fill='black', width='2')
-        line2 = self.__canvas.create_line(
-            mid[0], mid[1],
-            pointee_coord[0], pointee_coord[1],
-            fill='black', width='2')
-        self.__canvas.lower(line1)
-        self.__canvas.lower(line2)
-        self.__pointer_to.setdefault(pointer, []).append((pointee, line1, line2))
-        self.__pointee_by.setdefault(pointee, []).append((pointer, line1, line2))
-
     def __handle_mouse_right_click(self, item: int):
         if self.__active_item is None:
             if item in self.__potential_parents:
@@ -213,6 +190,9 @@ class ExpressionView:
     def show_error(self, title: str, text: str):
         messagebox.showerror(title, text)
 
+    def show_info(self, title: str, text: str):
+        messagebox.showinfo(title, text)
+
     def add_variable(self, name: str, id: int):
         view_id = self.__create_rectangle_in_view(name)
         self.__view_id_map[view_id] = id
@@ -245,3 +225,24 @@ class ExpressionView:
         self.__view_id_map[view_id] = id
         self.__model_id_map[id] = view_id
 
+    def form_parenting_connection(self, parent_id: int, child_id: int) -> None:
+        pointer = self.__model_id_map[parent_id]
+        pointee = self.__model_id_map[child_id]
+        pointer_coord = ExpressionView.__get_center(
+            self.__canvas.coords(pointer))
+        pointee_coord = ExpressionView.__get_center(
+            self.__canvas.coords(pointee))
+        mid = ((pointee_coord[0] + pointer_coord[0]) // 2,
+               (pointee_coord[1] + pointer_coord[1]) // 2)
+        line1 = self.__canvas.create_line(
+            pointer_coord[0], pointer_coord[1],
+            mid[0], mid[1],
+            arrow='last', fill='black', width='2')
+        line2 = self.__canvas.create_line(
+            mid[0], mid[1],
+            pointee_coord[0], pointee_coord[1],
+            fill='black', width='2')
+        self.__canvas.lower(line1)
+        self.__canvas.lower(line2)
+        self.__pointer_to.setdefault(pointer, []).append((pointee, line1, line2))
+        self.__pointee_by.setdefault(pointee, []).append((pointer, line1, line2))

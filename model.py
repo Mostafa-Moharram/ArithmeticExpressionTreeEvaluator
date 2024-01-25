@@ -67,11 +67,14 @@ class ExpressionModel:
             self.__expressions_with_no_parent_count -= 1
             self.__has_parent[child_id] = True
 
+    def set_variable_value(self, name: str, value: float):
+        self.__variables[name] = value
+
     @property
     def variables(self) -> set:
         return set(self.__variables.keys())
 
-    def evaluate(self, variables: dict) -> float:
+    def evaluate(self) -> float:
         if len(self.__expressions) == 0:
             return 0
         if self.__expressions_with_no_parent_count != 1:
@@ -81,11 +84,4 @@ class ExpressionModel:
             index += 1
             if not p:
                 break
-        for key in self.__variables.keys():
-            if key not in variables:
-                raise ValueError('Variable {key} is not specified.')
-            value = variables[key]
-            if not math.isfinite(value):
-                raise ValueError('Variable {key} value is infinity or NaN.')
-            self.__variables[key] = value
         return self.__expressions[index].evaluate()
