@@ -78,7 +78,12 @@ class ExpressionModel:
         if len(self.__expressions) == 0:
             return 0
         if self.__expressions_with_no_parent_count != 1:
-            raise ValueError('Input expression is not a tree.')
+            raise ValueError('Input expression is not even a tree.')
+        for e in self.__expressions:
+            if isinstance(e, OperatorBase):
+                o: OperatorBase = e
+                if len(o.expressions) != 2:
+                    raise ValueError('Input expression is not even a tree.')
         index = -1
         for p in self.__has_parent:
             index += 1
