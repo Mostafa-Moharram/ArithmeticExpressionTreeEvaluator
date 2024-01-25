@@ -1,23 +1,45 @@
+from model import ExpressionModel
 from validators import try_parse_float, validate_variable_name
 from view import ExpressionView
 
 class ExpressionController:
+    def __init__(self, model: ExpressionModel) -> None:
+        self.__model = model
+
     def create_operator(self, view: ExpressionView, operator: str):
-        view.add_operator(operator, 0) # TODO
+        try:
+            model_id = self.__model.create_operator(operator)
+            view.add_operator(operator, model_id)
+        except ValueError as ve:
+            view.show_error('Invalid input', ve.args[0])
 
     def create_constant(self, view: ExpressionView, value_str: str):
         result = try_parse_float(value_str)
         if result[0]:
-            view.add_constant(str(result[1]), 0) # TODO
+            model_id = self.__model.create_constant(result[1])
+            view.add_constant(str(result[1]), model_id)
         else:
             view.show_error('Invalid Input', result[1])
 
     def create_variable(self, view: ExpressionView, name: str):
         validation_result = validate_variable_name(name)
         if validation_result[0]:
-            view.add_variable(name, 0) # TODO
+            model_id = self.__model.create_variable(name)
+            view.add_variable(name, model_id)
         else:
             view.show_error('Invaid Input', validation_result[1])
 
+    def set_parent_of(self, view: ExpressionView, parent_id: int, child_id: int) -> None:
+        validation_result = self.__model.can_be_parent_of(parent_id, child_id)
+        if not validation_result[0]:
+            view.show_error('Invalid Connection', validation_result[1])
+            return
+        try:
+            self.__model.set_parent_of(parent_id, child_id)
+            view.form_parenting_connection(parent_id, child_id)
+        except Exception as e:
+            view.show_error('Unknown error', e.args[0])
+
     def evaluate_expression(self, view: ExpressionView, variable_keyvalue: list[tuple]):
         print(variable_keyvalue)
+

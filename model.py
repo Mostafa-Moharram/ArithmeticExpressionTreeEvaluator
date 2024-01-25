@@ -42,24 +42,26 @@ class ExpressionModel:
 
     def can_be_parent_of(self, parent_id: int, child_id: int) -> bool:
         if parent_id < 0 or len(self.__expressions) <= parent_id:
-            return False
+            return (False, f'{parent_id} isn\'t a valid Id.')
         if child_id < 0 or len(self.__expressions) <= child_id:
-            return False
-        if not isinstance(parent_id, OperatorBase):
-            return False
+            return (False, f'{child_id} isn\'t a valid Id.')
+        if not isinstance(self.__expressions[parent_id], OperatorBase):
+            return (False, f'{parent_id} isn\'t an operator.')
         parent: OperatorBase = self.__expressions[parent_id]
-        return len(parent.expressions) < 2
+        if len(parent.expressions) < 2:
+            return (True, )
+        return (False, f'Operator {parent_id} has too many operands.')
 
     def set_parent_of(self, parent_id: int, child_id: int):
         if parent_id < 0 or len(self.__expressions) <= parent_id:
-            raise IndexError('{parent_id} is out of bounds.')
+            raise IndexError(f'{parent_id} isn\'t a valid Id.')
         if child_id < 0 or len(self.__expressions) <= child_id:
-            raise IndexError('{child_id} is out of bounds.')
-        if not isinstance(parent_id, OperatorBase):
-            raise ValueError('{parent_id} is not of type Operator')
+            raise IndexError(f'{child_id} isn\'t a valid Id.')
+        if not isinstance(self.__expressions[parent_id], OperatorBase):
+            raise ValueError(f'{parent_id} isn\'t an operator.')
         parent: OperatorBase = self.__expressions[parent_id]
         if len(parent.expressions) > 1:
-            raise MemoryError('Operator {parent_id} has too many operands.')
+            raise MemoryError(f'Operator {parent_id} has too many operands.')
         parent.expressions.append(self.__expressions[child_id])
         if not self.__has_parent[child_id]:
             self.__expressions_with_no_parent_count -= 1

@@ -18,6 +18,7 @@ class ExpressionView:
         self.__create_controls(operators)
         self.__variable_name_values = dict()
         self.__view_id_map = dict()
+        self.__model_id_map = dict()
         self.__pointer_to = dict()
         self.__pointee_by = dict()
         self.__active_item = None
@@ -37,7 +38,7 @@ class ExpressionView:
                                  command=self.__evaluate_expression)
         evaluate_button.pack(anchor='s', side='bottom')
         controls_frame.grid(row=0, column=1, sticky='nesw')
-    
+
     def __evaluate_expression(self):
         variable_keyvalue = {n: v.get() for n, v in self.__variable_name_values.items()}
         self.__controller.evaluate_expression(self, variable_keyvalue)
@@ -144,17 +145,9 @@ class ExpressionView:
             return ((coords[0] + coords[2]) // 2, (coords[1] + coords[3]) // 2)
         return (coords[0], coords[1] + 50)
 
-    def __handle_mouse_right_click(self, item: int):
-        if self.__active_item is None:
-            if item in self.__potential_parents:
-                self.__activate_arrow_drawing(item)
-            return
-        if self.__active_item == item:
-            self.__deactivate_arrow_drawing()
-            return
-        pointer = self.__active_item
-        pointee = item
-        self.__deactivate_arrow_drawing()
+    def form_parenting_connection(self, parent_id: int, child_id: int) -> None:
+        pointer = self.__model_id_map[parent_id]
+        pointee = self.__model_id_map[child_id]
         print(pointer, '-->', pointee)
         pointer_coord = ExpressionView.__get_center(
             self.__canvas.coords(pointer))
@@ -172,14 +165,23 @@ class ExpressionView:
             fill='black', width='2')
         self.__canvas.lower(line1)
         self.__canvas.lower(line2)
-        if pointer not in self.__pointer_to.keys():
-            self.__pointer_to[pointer] = [(pointee, line1, line2), ]
-        else:
-            self.__pointer_to[pointer].append((pointee, line1, line2))
-        if pointee not in self.__pointee_by.keys():
-            self.__pointee_by[pointee] = [(pointer, line1, line2), ]
-        else:
-            self.__pointee_by[pointee].append((pointer, line1, line2))
+        self.__pointer_to.setdefault(pointer, []).append((pointee, line1, line2))
+        self.__pointee_by.setdefault(pointee, []).append((pointer, line1, line2))
+
+    def __handle_mouse_right_click(self, item: int):
+        if self.__active_item is None:
+            if item in self.__potential_parents:
+                self.__activate_arrow_drawing(item)
+            return
+        if self.__active_item == item:
+            self.__deactivate_arrow_drawing()
+            return
+        pointer = self.__active_item
+        pointee = item
+        self.__deactivate_arrow_drawing()
+        self.__controller.set_parent_of(self,
+            self.__view_id_map[pointer],
+            self.__view_id_map[pointee])
 
     def __create_circle_in_view(self, text: str):
         item = self.__canvas.create_oval(0, 0, 60, 60, fill='white', width=1, outline='white')
@@ -188,7 +190,7 @@ class ExpressionView:
         self.__canvas.tag_bind(item_text, '<B1-Motion>', functools.partial(self.__handle_move_event, trigger=item, trigger_text=item_text, dx=30, dy=30))
         self.__canvas.tag_bind(item, '<Button-3>', lambda _: self.__handle_mouse_right_click(item))
         return item
-    
+
     def __create_rectangle_in_view(self, text: str):
         item = self.__canvas.create_rectangle(0, 0, 70, 70, fill='white', width=1, outline='white')
         item_text = self.__canvas.create_text(35, 35, text=text)
@@ -213,7 +215,8 @@ class ExpressionView:
 
     def add_variable(self, name: str, id: int):
         view_id = self.__create_rectangle_in_view(name)
-        # TODO: Bind model_id with view_id
+        self.__view_id_map[view_id] = id
+        self.__model_id_map[id] = view_id
 
         if name in self.__variable_name_values.keys():
             return
@@ -233,10 +236,12 @@ class ExpressionView:
 
     def add_constant(self, text: str, id: int):
         view_id = self.__create_triangle_in_view(text)
-        # TODO: Bind model_id with view_id
+        self.__view_id_map[view_id] = id
+        self.__model_id_map[id] = view_id
 
     def add_operator(self, text: str, id: int):
         view_id = self.__create_circle_in_view(text)
         self.__potential_parents.add(view_id)
-        # TODO: Bind model_id with view_id
+        self.__view_id_map[view_id] = id
+        self.__model_id_map[id] = view_id
 

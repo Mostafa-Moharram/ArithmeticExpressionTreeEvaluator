@@ -1,7 +1,9 @@
 from controller import ExpressionController
 from view import ExpressionView
+from model import ExpressionModel
 
-controller = ExpressionController()
+model = ExpressionModel()
+controller = ExpressionController(model)
 view = ExpressionView(controller, ('+', '*', '-', '/'))
 
 view.mainloop()
